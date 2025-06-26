@@ -23,13 +23,23 @@ class RLAgent:
   def get_name(self):
     return "RLAgentV3"
 
+  def karma_bucket(self, karma):
+    if karma < -10:
+      return -2
+    elif karma < 0:
+      return -1
+    elif karma < 10:
+      return 0
+    else:
+      return 1
+
   def extract_state(self, your_karma, his_karma):
-    return (np.sign(your_karma), np.sign(his_karma))
+    return (self.karma_bucket(your_karma), self.karma_bucket(his_karma))
 
   def decision(self, amount, rounds_left, your_karma, his_karma):
     state = self.extract_state(your_karma, his_karma)
 
-    # Atualiza Q-table
+    # Atualiza Q-table com Bellman se tiver histórico
     if self.last_state is not None and self.last_action is not None:
       action_index = ["split", "steal"].index(self.last_action)
       old_value = self.q_table[self.last_state][action_index]
@@ -38,13 +48,11 @@ class RLAgent:
           (self.last_reward + self.gamma * next_max)
       self.q_table[self.last_state][action_index] = new_value
 
-    # Escolha de ação (ε-greedy)
     if random.random() < self.epsilon:
       action = random.choice(["split", "steal"])
     else:
       action = ["split", "steal"][np.argmax(self.q_table[state])]
 
-    # Decaimento de epsilon
     if self.epsilon > self.epsilon_min:
       self.epsilon *= self.epsilon_decay
 
@@ -53,14 +61,15 @@ class RLAgent:
     return action
 
   def result(self, your_action, his_action, total_possible, reward):
+    # Reward shaping mais cooperativo
     if your_action == "split" and his_action == "split":
-      self.last_reward = 1
+      self.last_reward = 3
     elif your_action == "steal" and his_action == "split":
-      self.last_reward = 2
+      self.last_reward = 1
     elif your_action == "split" and his_action == "steal":
-      self.last_reward = 0
+      self.last_reward = -2
     elif your_action == "steal" and his_action == "steal":
-      self.last_reward = -1
+      self.last_reward = -3
 
   def save_q_table(self):
     with open(self.q_table_filename, "wb") as f:
@@ -69,5 +78,4 @@ class RLAgent:
   def load_q_table(self):
     if os.path.exists(self.q_table_filename):
       with open(self.q_table_filename, "rb") as f:
-        loaded = pickle.load(f)
-        self.q_table.update(loaded)
+        self.q_table.update(pickle.load(f))
