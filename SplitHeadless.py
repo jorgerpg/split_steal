@@ -2,9 +2,7 @@ from collections import defaultdict
 import random
 import numpy as np
 from itertools import combinations
-import simple_opponents
-import your_agent
-import rl_agent
+from agents import simple_opponents, rl_agentV2, rl_agentV3, rl_agent
 
 mean = 100
 variance = 10000
@@ -74,13 +72,13 @@ class Player:
 # Definir agentes
 agents = [
     Player(simple_opponents.Karmine()),
-    Player(simple_opponents.Karmine()),
     Player(rl_agent.RLAgent()),
-    Player(your_agent.ReinforcementLearningAgent())
+    Player(rl_agentV2.RLAgent()),
+    Player(rl_agentV3.RLAgent())
 ]
 
 nrematches = 10
-nfullrounds = 100
+nfullrounds = 200
 total_rounds = len(agents) * (len(agents) - 1) * nfullrounds * nrematches // 2
 game = Game(total_rounds)
 

@@ -1,9 +1,11 @@
 from collections import defaultdict
 import random
 import numpy as np
+import pickle
+import os
 
 
-class ReinforcementLearningAgent:
+class RLAgent:
   def __init__(self):
     self.q_table = defaultdict(lambda: [0.0, 0.0])
     self.alpha = 0.5       # Taxa de aprendizado
@@ -12,8 +14,11 @@ class ReinforcementLearningAgent:
     self.last_state = None
     self.last_action = None
 
+    self.q_table_filename = "mem/qtable_MyRLAgentV2.pkl"
+    self.load_q_table()
+
   def get_name(self):
-    return "MyRLAgent"
+    return "RLAgentV2"
 
   def extract_state(self, rounds_left, your_karma, his_karma):
     return (rounds_left, np.sign(your_karma), np.sign(his_karma))
@@ -53,3 +58,13 @@ class ReinforcementLearningAgent:
     new_value = (1 - self.alpha) * old_value + self.alpha * \
         (reward + self.gamma * next_max)
     self.q_table[self.last_state][action_index] = new_value
+
+  def save_q_table(self):
+    with open(self.q_table_filename, "wb") as f:
+      pickle.dump(dict(self.q_table), f)
+
+  def load_q_table(self):
+    if os.path.exists(self.q_table_filename):
+      with open(self.q_table_filename, "rb") as f:
+        loaded = pickle.load(f)
+        self.q_table.update(loaded)

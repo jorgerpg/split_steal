@@ -6,16 +6,15 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 
-import simple_opponents
-import your_agent
-import rl_agent
+
+from agents import simple_opponents, rl_agentV2, rl_agentV3, rl_agent
 
 # Parâmetros da recompensa
 mean = 100
 variance = 10000
 
 # Criação da pasta para gráficos
-os.makedirs("graphs", exist_ok=True)
+os.makedirs("NSH/graphs", exist_ok=True)
 
 
 class Game:
@@ -92,7 +91,8 @@ AGENT_TYPES = [
     simple_opponents.Pretender,
     simple_opponents.Randy,
     rl_agent.RLAgent,
-    your_agent.ReinforcementLearningAgent,
+    rl_agentV2.RLAgent,
+    rl_agentV3.RLAgent,
     simple_opponents.Copycat
 ]
 
@@ -138,7 +138,7 @@ plt.ylabel("Recompensa acumulada")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig("graphs/desempenho_geral.png")
+plt.savefig("NSH/graphs/desempenho_geral.png")
 plt.close()
 
 
@@ -156,5 +156,5 @@ plt.ylabel('Frequência')
 plt.xlabel('Agentes')
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig('graphs/decisions_by_agent.png')
+plt.savefig('NSH/graphs/decisions_by_agent.png')
 plt.close()

@@ -1,21 +1,27 @@
 from collections import defaultdict
 import random
 import numpy as np
+import os
+import pickle
 
 
-class ReinforcementLearningAgent:
+class RLAgent:
   def __init__(self):
     self.q_table = defaultdict(lambda: [0.0, 0.0])
     self.alpha = 0.6
     self.gamma = 0.95
-    self.epsilon = 0.3  # começa alto
+    self.epsilon = 0.3
     self.epsilon_decay = 0.99
     self.epsilon_min = 0.05
     self.last_state = None
     self.last_action = None
+    self.last_reward = 0
+
+    self.q_table_filename = "mem/qtable_MyRLAgentV3.pkl"
+    self.load_q_table()
 
   def get_name(self):
-    return "MyRLAgent"
+    return "RLAgentV3"
 
   def extract_state(self, your_karma, his_karma):
     return (np.sign(your_karma), np.sign(his_karma))
@@ -23,17 +29,16 @@ class ReinforcementLearningAgent:
   def decision(self, amount, rounds_left, your_karma, his_karma):
     state = self.extract_state(your_karma, his_karma)
 
-    # Atualiza Q-table se tiver histórico
+    # Atualiza Q-table
     if self.last_state is not None and self.last_action is not None:
-      reward = self.last_reward  # vindo do último result()
       action_index = ["split", "steal"].index(self.last_action)
       old_value = self.q_table[self.last_state][action_index]
       next_max = max(self.q_table[state])
-      self.q_table[self.last_state][action_index] = \
-          (1 - self.alpha) * old_value + self.alpha * \
-          (reward + self.gamma * next_max)
+      new_value = (1 - self.alpha) * old_value + self.alpha * \
+          (self.last_reward + self.gamma * next_max)
+      self.q_table[self.last_state][action_index] = new_value
 
-    # Política epsilon-greedy
+    # Escolha de ação (ε-greedy)
     if random.random() < self.epsilon:
       action = random.choice(["split", "steal"])
     else:
@@ -48,7 +53,6 @@ class ReinforcementLearningAgent:
     return action
 
   def result(self, your_action, his_action, total_possible, reward):
-    # Reward shaping mais indulgente
     if your_action == "split" and his_action == "split":
       self.last_reward = 1
     elif your_action == "steal" and his_action == "split":
@@ -57,3 +61,13 @@ class ReinforcementLearningAgent:
       self.last_reward = 0
     elif your_action == "steal" and his_action == "steal":
       self.last_reward = -1
+
+  def save_q_table(self):
+    with open(self.q_table_filename, "wb") as f:
+      pickle.dump(dict(self.q_table), f)
+
+  def load_q_table(self):
+    if os.path.exists(self.q_table_filename):
+      with open(self.q_table_filename, "rb") as f:
+        loaded = pickle.load(f)
+        self.q_table.update(loaded)

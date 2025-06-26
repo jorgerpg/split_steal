@@ -1,21 +1,17 @@
+import os
 from collections import defaultdict, Counter
-import random
 import numpy as np
 from itertools import combinations
 import matplotlib.pyplot as plt
-import os
-import pandas as pd
 
-import simple_opponents
-import your_agent
-import rl_agent
+from agents import simple_opponents, rl_agentV2, rl_agentV3, rl_agent
 
 # Parâmetros da recompensa
 mean = 100
 variance = 10000
 
 # Criação da pasta para gráficos
-os.makedirs("graphs", exist_ok=True)
+os.makedirs("NSHL/graphs", exist_ok=True)
 
 
 class Game:
@@ -96,7 +92,8 @@ AGENT_TYPES = [
     simple_opponents.Pretender,
     simple_opponents.Randy,
     rl_agent.RLAgent,
-    your_agent.ReinforcementLearningAgent,
+    rl_agentV2.RLAgent,
+    rl_agentV3.RLAgent,
     simple_opponents.Copycat
 ]
 
@@ -115,7 +112,7 @@ qtable_evolution = defaultdict(list)
 round_index = 1
 
 while len(agents) > 1:
-  print(f"\n=== RODADA DE ELIMINAÇÃO {round_index} ===")
+  print(f"\\n=== RODADA DE ELIMINAÇÃO {round_index} ===")
   for agent in agents:
     agent.total_amount = 0
     agent.history = []
@@ -129,21 +126,21 @@ while len(agents) > 1:
       game.prepare_round()
       game.play_round(player1, player2, remaining)
 
-  print("\nPontuação atual:")
+  print("\\nPontuação atual:")
   for agent in agents:
     print(f"{agent.name} - Score: {agent.total_amount:.2f}")
     if agent.total_amount > best_score_by_type[agent.name]:
       best_score_by_type[agent.name] = agent.total_amount
     type_totals[agent.name].append(agent.total_amount)
 
-    if agent.name in ["SimpleRL", "MyRLAgent"]:
+    if agent.name in ["SimpleRL", "RLAgentV2", "RLAgentV3"]:
       rl_performance[agent.name].append(agent.total_amount)
       qtable = getattr(agent.agent, "q_table", getattr(agent.agent, "Q", {}))
       qtable_evolution[agent.name].append(len(qtable))
 
   # Gráfico de RL por rodada
   rl_agents = [agent for agent in agents if agent.name in [
-      "SimpleRL", "MyRLAgent"]]
+      "SimpleRL", "RLAgentV2", "RLAgentV3"]]
   if rl_agents:
     plt.figure(figsize=(12, 6))
     for agent in rl_agents:
@@ -154,24 +151,29 @@ while len(agents) > 1:
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig(f"graphs/rl_rodada_{round_index}.png")
+    plt.savefig(f"NSHL/graphs/rl_rodada_{round_index}.png")
     plt.close()
 
   # Eliminar os piores
   agents.sort(key=lambda x: x.total_amount)
   eliminated = agents[:min(ELIMINATE_BOTTOM_N, len(agents)-1)]
+
+  # 🔥 SALVAR Q-TABLE DO RLAgentV3 ANTES DE ELIMINAR
+  for agent in eliminated:
+    if agent.name == "RLAgentV3" or "RLAgentV2" and hasattr(agent.agent, "save_q_table"):
+      agent.agent.save_q_table()
+
   agents = agents[min(ELIMINATE_BOTTOM_N, len(agents)-1):]
 
-  print(f"\n❌ Eliminados ({len(eliminated)}): {[a.name for a in eliminated]}")
-  print(f"✅ Restantes: {len(agents)} agentes\n")
+  print(f"\\n❌ Eliminados ({len(eliminated)}): {[a.name for a in eliminated]}")
+  print(f"✅ Restantes: {len(agents)} agentes\\n")
   round_index += 1
 
 # Final
-print("\n=== AGENTE VENCEDOR ===")
+print("\\n=== AGENTE VENCEDOR ===")
 print(f"🏆 {agents[0].name} com score final: {agents[0].total_amount:.2f}")
 
 # Gráfico final:
-# Gráfico de linha com preenchimento
 plt.figure(figsize=(10, 5))
 for name, scores in type_totals.items():
   plt.plot(scores, label=name)
@@ -182,12 +184,11 @@ plt.ylabel("Recompensa Total")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig("graphs/melhor_media_linha_preenchida.png")
+plt.savefig("NSHL/graphs/melhor_media_linha_preenchida.png")
 plt.close()
 
-# Gráfico final dos agentes de RL, se ainda existirem
 rl_agents = [agent for agent in agents if agent.name in [
-    "SimpleRL", "MyRLAgent"]]
+    "SimpleRL", "RLAgentV2", "RLAgentV3"]]
 if rl_agents:
   plt.figure(figsize=(12, 6))
   for agent in rl_agents:
@@ -198,10 +199,9 @@ if rl_agents:
   plt.legend()
   plt.grid(True)
   plt.tight_layout()
-  plt.savefig("graphs/rl_final.png")
+  plt.savefig("NSHL/graphs/rl_final.png")
   plt.close()
 
-# Gráfico: Comparação de desempenho por rodada dos agentes de RL
 plt.figure(figsize=(10, 6))
 for name, scores in rl_performance.items():
   plt.plot(range(1, len(scores)+1), scores, marker='o', label=name)
@@ -212,10 +212,9 @@ plt.ylabel("Recompensa Média")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig("graphs/comparacao_performance_rl_agents.png")
+plt.savefig("NSHL/graphs/comparacao_performance_rl_agents.png")
 plt.close()
 
-# Gráfico: Evolução do tamanho da Q-table dos agentes de RL
 plt.figure(figsize=(10, 6))
 for name, sizes in qtable_evolution.items():
   plt.plot(range(1, len(sizes)+1), sizes, marker='s',
@@ -226,5 +225,5 @@ plt.ylabel("Entradas não nulas na Q-table")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig("graphs/evolucao_qtable_rl_agents.png")
+plt.savefig("NSHL/graphs/evolucao_qtable_rl_agents.png")
 plt.close()
