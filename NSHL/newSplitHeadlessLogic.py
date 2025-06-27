@@ -82,9 +82,9 @@ class Player:
 
 
 # Configurações do torneio por eliminação
-AGENTS_PER_TYPE = 10
-ELIMINATE_BOTTOM_N = 5
-N_REMATCHES = 25
+AGENTS_PER_TYPE = 5
+ELIMINATE_BOTTOM_N = 1
+N_REMATCHES = 30
 
 AGENT_TYPES = [
     simple_opponents.Karmine,
